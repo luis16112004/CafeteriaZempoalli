@@ -13,49 +13,81 @@
 </head>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-
-    const track = document.querySelector('.carrusel__track');
-    const items  = document.querySelectorAll('.carrusel__item');
-    const dotsWrap = document.querySelector('.carrusel__dots');
+    const track    = document.querySelector('.carrusel__track');
     const btnPrev  = document.querySelector('.carrusel__btn--prev');
     const btnNext  = document.querySelector('.carrusel__btn--next');
+    const dotsWrap = document.querySelector('.carrusel__dots');
 
-    let current = 0;
+    const originalItems = Array.from(track.querySelectorAll('.carrusel__item'));
+    // Duplicar ítems para loop infinito
+    originalItems.forEach(item => track.appendChild(item.cloneNode(true)));
+    originalItems.forEach(item => track.appendChild(item.cloneNode(true)));
 
-    function visibles() { return window.innerWidth <= 768 ? 1 : 3; }
-    function itemWidth() { return items[0].getBoundingClientRect().width; }
-    function maxIndex()  { return items.length - visibles(); }
+    const allItems = () => track.querySelectorAll('.carrusel__item');
+    const visibles = () => window.innerWidth <= 768 ? 1 : 3;
+    const itemW    = () => allItems()[0].getBoundingClientRect().width;
+    const total    = originalItems.length;
+
+    let pos = 0;
+    let isTransitioning = false;
+    let autoTimer;
+
+    function moveTo(index, animated = true) {
+      track.style.transition = animated ? 'transform 0.7s cubic-bezier(0.25,0.46,0.45,0.94)' : 'none';
+      track.style.transform  = `translateX(-${index * itemW()}px)`;
+      pos = index;
+      updateDots();
+    }
+
+    function advance() {
+      if (isTransitioning) return;
+      isTransitioning = true;
+      moveTo(pos + 1);
+      setTimeout(() => {
+        if (pos >= total) { moveTo(pos - total, false); }
+        isTransitioning = false;
+      }, 720);
+    }
+
+    function retreat() {
+      if (isTransitioning) return;
+      isTransitioning = true;
+      moveTo(pos - 1);
+      setTimeout(() => {
+        if (pos < 0) { moveTo(pos + total, false); }
+        isTransitioning = false;
+      }, 720);
+    }
+
+    function startAuto() { autoTimer = setInterval(advance, 2500); }
+    function stopAuto()  { clearInterval(autoTimer); }
 
     function buildDots() {
       dotsWrap.innerHTML = '';
-      const pages = Math.ceil(items.length / visibles());
-      for (let i = 0; i < pages; i++) {
+      for (let i = 0; i < Math.ceil(total / visibles()); i++) {
         const d = document.createElement('button');
         d.className = 'carrusel__dot' + (i === 0 ? ' active' : '');
-        d.addEventListener('click', () => goTo(i * visibles()));
+        d.addEventListener('click', () => { stopAuto(); moveTo(i * visibles()); startAuto(); });
         dotsWrap.appendChild(d);
       }
     }
 
     function updateDots() {
-      const page = Math.floor(current / visibles());
+      const page = Math.floor((pos % total) / visibles());
       document.querySelectorAll('.carrusel__dot').forEach((d, i) =>
-        d.classList.toggle('active', i === page)
-      );
+        d.classList.toggle('active', i === page));
     }
 
-    function goTo(index) {
-      current = Math.max(0, Math.min(index, maxIndex()));
-      track.style.transform = `translateX(-${current * itemWidth()}px)`;
-      updateDots();
-    }
+    btnPrev.addEventListener('click', () => { stopAuto(); retreat(); startAuto(); });
+    btnNext.addEventListener('click', () => { stopAuto(); advance(); startAuto(); });
+    window.addEventListener('resize', () => { moveTo(0, false); buildDots(); });
 
-    btnPrev.addEventListener('click', () => goTo(current - 1));
-    btnNext.addEventListener('click', () => goTo(current + 1));
-    window.addEventListener('resize', () => { current = 0; buildDots(); goTo(0); });
+    // Pausar al hover
+    track.parentElement.addEventListener('mouseenter', stopAuto);
+    track.parentElement.addEventListener('mouseleave', startAuto);
 
     buildDots();
-
+    startAuto();
   });
 </script>
 <body>
@@ -63,6 +95,7 @@
   <nav class="nav">
     <a href="#inicio" class="nav__logo">
       <img src="assets/logo.png" alt="Zempoalli">
+      <img src="assets/gallery/pueblo-magico-2.jpg" alt="Zempoala Pueblo Mágico" class="nav__pueblo">
     </a>
     <button class="nav__toggle" aria-label="Abrir menu" aria-expanded="false">
       <span></span><span></span><span></span>
@@ -83,7 +116,7 @@
     <div class="hero__ring"></div>
     <div class="hero__ring hero__ring--2"></div>
     <div class="hero__content">
-      <span class="hero__tag">Zempoala, Hidalgo</span>
+      <span class="hero__tag">Zempoala &middot; Pueblo M&aacute;gico &middot; Hidalgo</span>
       <img src="assets/logo.png" alt="Zempoalli Coffee and Snacks" class="hero__logo">
       <p class="hero__sub">Coffee &amp; snacks</p>
       <div class="hero__divider"></div>
@@ -146,38 +179,90 @@
         <h2 class="title">Nuestros <em>servicios</em></h2>
         <div class="rule rule--center"></div>
       </div>
-      <div class="servicios__grid">
-        <article class="svc-card">
-          <div class="svc-card__img"><img src="assets/servicios/cafe.png" alt="Cafe" class="foto"   ></div>
-          <h3>Cafe</h3>
-          <p>Bebidas calientes y frias preparadas con carino para cualquier momento del dia.</p>
-        </article>
-        <article class="svc-card">
-          <div class="svc-card__img"><img src="assets/servicios/hamburguesas.png" alt="Hamburguesas"></div>
-          <h3>Hamburguesas</h3>
-          <p>Res, hawaiana, arrachera y pollo crunch. Perfeccion en cada bocado.</p>
-        </article>
-        <article class="svc-card">
-          <div class="svc-card__img"><img src="assets/servicios/crepas.png" alt="Crepas"></div>
-          <h3>Crepas</h3>
-          <p>Dulces y saladas con ingredientes frescos y combinaciones deliciosas.</p>
-        </article>
-        <article class="svc-card">
-          <div class="svc-card__img"><img src="assets/servicios/malteadas.png" alt="Malteadas"></div>
-          <h3>Malteadas</h3>
-          <p>Refrescantes malteadas con crema batida para endulzar tu tarde.</p>
-        </article>
-        <article class="svc-card">
-          <div class="svc-card__img"><img src="assets/servicios/soda-italiana.png" alt="Sodas italianas"></div>
-          <h3>Sodas italianas</h3>
-          <p>Bebidas burbujeantes con sabores naturales y mojitos refrescantes.</p>
-        </article>
-        <article class="svc-card">
-          <div class="svc-card__img"><img src="assets/servicios/tartas.png" alt="Postres"></div>
-          <h3>Postres &amp; snacks</h3>
-          <p>Tartas, galletas, alitas, enchiladas y los antojos de la casa.</p>
-        </article>
+
+      <div class="svc-tabs" role="tablist">
+        <button class="svc-tab active" data-svc="svc-frias">Bebidas Fr&iacute;as</button>
+        <button class="svc-tab" data-svc="svc-calientes">Bebidas Calientes</button>
+        <button class="svc-tab" data-svc="svc-peculiaridad">Peculiaridad</button>
+        <button class="svc-tab" data-svc="svc-comida">Comida &amp; Snacks</button>
+        <button class="svc-tab" data-svc="svc-postres">Postres</button>
       </div>
+
+      <div class="svc-panel active" id="svc-frias">
+        <div class="servicios__grid">
+          <article class="svc-card">
+            <div class="svc-card__img"><img src="assets/servicios/malteadas.png" alt="Malteadas" class="foto"></div>
+            <h3>Malteadas &amp; Smoothies</h3>
+            <p>Malteadas en 4 sabores con crema batida y smoothies naturales de fresa, mango, kiwi y m&aacute;s.</p>
+          </article>
+          <article class="svc-card">
+            <div class="svc-card__img"><img src="assets/servicios/soda-italiana.png" alt="Frappés y Sodas"></div>
+            <h3>Frapp&eacute;s &amp; Sodas</h3>
+            <p>Frapp&eacute;s en 8 sabores, sodas italianas con perlas explosivas, limonadas y naranjadas frescas.</p>
+          </article>
+        </div>
+      </div>
+
+      <div class="svc-panel" id="svc-calientes">
+        <div class="servicios__grid">
+          <article class="svc-card">
+            <div class="svc-card__img"><img src="assets/servicios/cafe.png" alt="Cafe" class="foto"></div>
+            <h3>Caf&eacute; de Especialidad</h3>
+            <p>Americano, Espresso, Doppio, Flat White, Cortado. Preparados con cari&ntilde;o para cada momento.</p>
+          </article>
+        </div>
+      </div>
+
+      <div class="svc-panel" id="svc-peculiaridad">
+        <div class="servicios__grid">
+          <article class="svc-card">
+            <div class="svc-card__img"><img src="assets/servicios/cafe.png" alt="Lattes y especialidades" class="foto"></div>
+            <h3>Lattes &amp; Especialidades</h3>
+            <p>Capuchino, Latte, Matcha, Taro, Chai, Moka, Affogato, Carajillo y cervezas artesanales.</p>
+          </article>
+          <article class="svc-card">
+            <div class="svc-card__img"><img src="assets/servicios/favoritos.png" alt="Tisanas y tés"></div>
+            <h3>Tisanas &amp; T&eacute;s</h3>
+            <p>Tisanas herbales y frutales, Mojitos naturales y t&eacute;s de diversas variedades.</p>
+          </article>
+        </div>
+      </div>
+
+      <div class="svc-panel" id="svc-comida">
+        <div class="servicios__grid">
+          <article class="svc-card">
+            <div class="svc-card__img"><img src="assets/servicios/hamburguesas.png" alt="Hamburguesas"></div>
+            <h3>Hamburguesas &amp; Baguettes</h3>
+            <p>Res, Hawaiana, Arrachera, Pollo Crunch y BBQ. Baguettes gourmet con 7 opciones.</p>
+          </article>
+          <article class="svc-card">
+            <div class="svc-card__img"><img src="assets/servicios/crepas.png" alt="Pizzetas y crepas saladas"></div>
+            <h3>Pizzetas &amp; Crepas Saladas</h3>
+            <p>Pizzetas en 5 variedades y crepas saladas de jamo&ntilde;n, champi&ntilde;&oacute;n y hawaiana.</p>
+          </article>
+          <article class="svc-card">
+            <div class="svc-card__img"><img src="assets/servicios/favoritos.png" alt="Snacks y alitas"></div>
+            <h3>Snacks &amp; Alitas</h3>
+            <p>Alitas y boneless en 10 salsas, nachos, dedos de queso, papas gajo y m&aacute;s antojos.</p>
+          </article>
+        </div>
+      </div>
+
+      <div class="svc-panel" id="svc-postres">
+        <div class="servicios__grid">
+          <article class="svc-card">
+            <div class="svc-card__img"><img src="assets/servicios/tartas.png" alt="Postres y tartas"></div>
+            <h3>Postres &amp; Tartas</h3>
+            <p>Tartas caseras, copas de helado para endulzar tu visita.</p>
+          </article>
+          <article class="svc-card">
+            <div class="svc-card__img"><img src="assets/servicios/crepas.png" alt="Crepas dulces y waffles"></div>
+            <h3>Crepas &amp; Waffles</h3>
+            <p>Crepas dulces y waffles con helado, lechera, chocolate, cajeta, nutella y frutas.</p>
+          </article>
+        </div>
+      </div>
+
     </div>
   </section>
 
@@ -186,18 +271,18 @@
   <div class="wrap reveal">
     <div class="centered">
       <span class="eyebrow">Carta</span>
-      <h2 class="title">Nuestro <em>menu</em></h2>
+      <h2 class="title">Nuestro <em>men&uacute;</em></h2>
       <div class="rule rule--center"></div>
-      <p class="menu-note">Precios en pesos mexicanos. Consulta promociones del dia por WhatsApp.</p>
+      <p class="menu-note">Precios en pesos mexicanos. Consulta promociones del d&iacute;a por WhatsApp.</p>
     </div>
 
     <div class="menu-tabs" role="tablist">
       <button class="menu-tab active" data-tab="comida">Comida</button>
       <button class="menu-tab" data-tab="snacks">Snacks</button>
       <button class="menu-tab" data-tab="postres">Postres</button>
-      <button class="menu-tab" data-tab="frias">Bebidas frias</button>
-      <button class="menu-tab" data-tab="calientes">Bebidas calientes</button>
-      <button class="menu-tab" data-tab="cocteleria">Cocteleria</button>
+      <button class="menu-tab" data-tab="frias">Bebidas Fr&iacute;as</button>
+      <button class="menu-tab" data-tab="calientes">Bebidas Calientes</button>
+      <button class="menu-tab" data-tab="peculiaridad">Peculiaridad</button>
     </div>
 
     <!-- COMIDA -->
@@ -205,59 +290,52 @@
       <div class="menu-cols">
         <div>
           <h3 class="menu-cat">Hamburguesas</h3>
-          <p class="menu-cat-desc">Pan gourmet, tocino, jamon, quesillo, aderezos, pepinillos, lechuga, jitomate, cebolla y chile.</p>
-          <div class="menu-item"><span class="menu-item__name">Res</span><span class="menu-item__price">$65</span></div>
-          <div class="menu-item"><span class="menu-item__name">Hawaiana</span><span class="menu-item__price">$70</span></div>
-          <div class="menu-item"><span class="menu-item__name">Arrachera</span><span class="menu-item__price">$80</span></div>
-          <div class="menu-item"><span class="menu-item__name">Pollo Crunch</span><span class="menu-item__price">$70</span></div>
-
-          <h3 class="menu-cat">Sincronizada</h3>
-          <p class="menu-cat-desc">Quesos, aderezos, cebolla, jitomate, aguacate, chile.</p>
-          <div class="menu-item"><span class="menu-item__name">Sincronizada</span><span class="menu-item__price">$25</span></div>
-
-          <h3 class="menu-cat">Hot-Dog</h3>
-          <p class="menu-cat-desc">Tocino, quesillo, aderezos, cebolla, jitomate, chile.</p>
-          <div class="menu-item"><span class="menu-item__name">Hot-Dog</span><span class="menu-item__price">$25</span></div>
-
-          <h3 class="menu-cat">Burrito Jumbo</h3>
-          <p class="menu-cat-desc">Bistec, frijoles, aguacate, arroz, lechuga, quesillo, aderezos, guarnicion de papas a la francesa y verdura.</p>
-          <div class="menu-item"><span class="menu-item__name">Burrito Jumbo</span><span class="menu-item__price">$95</span></div>
+          <p class="menu-cat-desc">Pan gourmet a elegir (finas hierbas, parmesano, ajonjol&iacute; negro). Tocino, jam&oacute;n, quesillo, queso amarillo, lechuga, jitomate, pepinillos, cebolla caramelizada, chiles en vinagre, mayonesa, mostaza, k&eacute;tchup.</p>
+          <div class="menu-item"><span class="menu-item__name">Res</span><span class="menu-item__price">$85</span></div>
+          <div class="menu-item"><span class="menu-item__name">Hawaiana</span><span class="menu-item__price">$90</span></div>
+          <div class="menu-item"><span class="menu-item__name">Arrachera</span><span class="menu-item__price">$99</span></div>
+          <div class="menu-item"><span class="menu-item__name">Pollo Crunch</span><span class="menu-item__price">$95</span></div>
+          <div class="menu-item"><span class="menu-item__name">BBQ</span><span class="menu-item__price">$90</span></div>
 
           <h3 class="menu-cat">Pizzeta</h3>
-          <div class="menu-item"><span class="menu-item__name">Hawaiana</span><span class="menu-item__price">$50</span></div>
-          <div class="menu-item"><span class="menu-item__name">Peperoni</span><span class="menu-item__price">$50</span></div>
-          <div class="menu-item"><span class="menu-item__name">Jamon y Tocino</span><span class="menu-item__price">$50</span></div>
-          <div class="menu-item"><span class="menu-item__name">Champinon</span><span class="menu-item__price">$50</span></div>
+          <p class="menu-cat-desc">Ingrediente extra +$10</p>
+          <div class="menu-item"><span class="menu-item__name">Pepperoni</span><span class="menu-item__price">$60</span></div>
+          <div class="menu-item"><span class="menu-item__name">Hawaiana</span><span class="menu-item__price">$65</span></div>
+          <div class="menu-item"><span class="menu-item__name">Tocino y Jam&oacute;n</span><span class="menu-item__price">$65</span></div>
+          <div class="menu-item"><span class="menu-item__name">Champi&ntilde;&oacute;n</span><span class="menu-item__price">$65</span></div>
+          <div class="menu-item"><span class="menu-item__name">Jam&oacute;n Serrano</span><span class="menu-item__price">$75</span></div>
+
+          <h3 class="menu-cat">Sincronizada</h3>
+          <p class="menu-cat-desc">Tortilla de harina (2), quesillo, queso amarillo, jam&oacute;n de pierna, mayonesa, mostaza, k&eacute;tchup, cebolla, jitomate y aguacate.</p>
+          <div class="menu-item"><span class="menu-item__name">Sincronizada</span><span class="menu-item__price">$40</span></div>
+
+          <h3 class="menu-cat">Hot-Dog</h3>
+          <p class="menu-cat-desc">Salchicha frankfurt, tocino, quesillo, mayonesa, mostaza, k&eacute;tchup, cebolla, jitomate y chiles en vinagre.</p>
+          <div class="menu-item"><span class="menu-item__name">Hot-Dog</span><span class="menu-item__price">$30</span></div>
         </div>
         <div>
-          <h3 class="menu-cat">Alitas &amp; Boneless</h3>
-          <p class="menu-cat-desc">Acompanados de tiras de zanahoria, jicama y/o apio con aderezo.</p>
-          <div class="menu-item"><span class="menu-item__name">Alitas 6 pzas.</span><span class="menu-item__price">$60</span></div>
-          <div class="menu-item"><span class="menu-item__name">Alitas 12 pzas.</span><span class="menu-item__price">$110</span></div>
-          <div class="menu-item"><span class="menu-item__name">Boneless 250 gr.</span><span class="menu-item__price">$70</span></div>
-          <p class="menu-flavors"><strong>Picosas:</strong> Mango Habanero, Maracuya Habanero, Tamarindo Habanero, Buffalo, Zarzamora Chipotle, Frambuesa Morita, Mango Guajillo. <strong>Agridulces:</strong> BBQ Teriyaki, Agridulces, Lemon Pepper.</p>
+          <h3 class="menu-cat">Baguette</h3>
+          <p class="menu-cat-desc">Pan gourmet de queso con ajo, lechuga, aguacate, jitomate, cebolla caramelizada, frijoles refritos, pepinillos, queso manchego, mayonesa.</p>
+          <div class="menu-item"><span class="menu-item__name">Jam&oacute;n de Pierna</span><span class="menu-item__price">$80</span></div>
+          <div class="menu-item"><span class="menu-item__name">Salchicha Frankfurt</span><span class="menu-item__price">$80</span></div>
+          <div class="menu-item"><span class="menu-item__name">Peperoni</span><span class="menu-item__price">$85</span></div>
+          <div class="menu-item"><span class="menu-item__name">Pollo Asado</span><span class="menu-item__price">$90</span></div>
+          <div class="menu-item"><span class="menu-item__name">Pollo Crunch</span><span class="menu-item__price">$95</span></div>
+          <div class="menu-item"><span class="menu-item__name">Jam&oacute;n Serrano</span><span class="menu-item__price">$90</span></div>
+          <div class="menu-item"><span class="menu-item__name">Suiza</span><span class="menu-item__price">$105</span></div>
 
-          <h3 class="menu-cat">Ensaladas</h3>
-          <div class="menu-item"><span class="menu-item__name">Jardinera</span><span class="menu-item__price">$45</span></div>
-          <div class="menu-item"><span class="menu-item__name">Zempoalli</span><span class="menu-item__price">$60</span></div>
-          <div class="menu-item"><span class="menu-item__name">Arandano y Queso de Cabra</span><span class="menu-item__price">$80</span></div>
-
-          <h3 class="menu-cat">Pasta</h3>
-          <p class="menu-cat-desc">Salsa de quesos, queso parmesano y crutones.</p>
-          <div class="menu-item"><span class="menu-item__name">Pasta Alfredo</span><span class="menu-item__price">$55</span></div>
+          <h3 class="menu-cat">Crepas Saladas</h3>
+          <div class="menu-item"><span class="menu-item__name">Hawaiana</span><span class="menu-item__price">$80</span></div>
+          <div class="menu-item"><span class="menu-item__name">Jam&oacute;n con Queso</span><span class="menu-item__price">$80</span></div>
+          <div class="menu-item"><span class="menu-item__name">Champi&ntilde;&oacute;n con Queso</span><span class="menu-item__price">$80</span></div>
 
           <h3 class="menu-cat">Enchiladas Suizas</h3>
-          <p class="menu-cat-desc">Salsa suiza verde, gratinadas con queso manchego, cebolla y acompanadas con pan.</p>
-          <div class="menu-item"><span class="menu-item__name">Enchiladas Suizas</span><span class="menu-item__price">$65</span></div>
+          <p class="menu-cat-desc">Salsa suiza verde, gratinadas con queso manchego, cebolla.</p>
+          <div class="menu-item"><span class="menu-item__name">Enchiladas Suizas</span><span class="menu-item__price">$90</span></div>
 
-          <h3 class="menu-cat">Baguettes</h3>
-          <p class="menu-cat-desc">Lechuga, aguacate, jitomate, cebolla caramelizada, frijoles refritos, pepinillos, queso manchego, mayonesa.</p>
-          <div class="menu-item"><span class="menu-item__name">Jamon de Pierna</span><span class="menu-item__price">$60</span></div>
-          <div class="menu-item"><span class="menu-item__name">Salchicha Frankfurt</span><span class="menu-item__price">$60</span></div>
-          <div class="menu-item"><span class="menu-item__name">Peperoni</span><span class="menu-item__price">$65</span></div>
-          <div class="menu-item"><span class="menu-item__name">Pollo Asado</span><span class="menu-item__price">$75</span></div>
-          <div class="menu-item"><span class="menu-item__name">Jamon Serrano</span><span class="menu-item__price">$85</span></div>
-          <div class="menu-item"><span class="menu-item__name">Suiza</span><span class="menu-item__price">$85</span></div>
+          <h3 class="menu-cat">Burrito Jumbo</h3>
+          <p class="menu-cat-desc">Bictec, frijoles, arroz, lechuga, cebolla caramelizada, aguacate, quesillo, mayonesa, guarnicion de papas y verdura con ranch.</p>
+          <div class="menu-item"><span class="menu-item__name">Burrito Jumbo</span><span class="menu-item__price">$120</span></div>
         </div>
       </div>
     </div>
@@ -266,19 +344,23 @@
     <div class="menu-panel" id="snacks">
       <div class="menu-cols">
         <div>
-          <h3 class="menu-cat">Snacks</h3>
-          <div class="menu-item"><span class="menu-item__name">Papas a la Francesa</span><span class="menu-item__price">$40</span></div>
-          <div class="menu-item"><span class="menu-item__name">Papas Zempoalli</span><span class="menu-item__price">$55</span></div>
-          <div class="menu-item"><span class="menu-item__name">Nachos</span><span class="menu-item__price">$40</span></div>
-          <div class="menu-item"><span class="menu-item__name">Nachos Zempoalli</span><span class="menu-item__price">$50</span></div>
-          <div class="menu-item"><span class="menu-item__name">Dedos de Queso (6 pzs.)</span><span class="menu-item__price">$60</span></div>
-          <div class="menu-item"><span class="menu-item__name">Papas Gajo</span><span class="menu-item__price">$45</span></div>
-          <div class="menu-item"><span class="menu-item__name">Salchi-Pulpo</span><span class="menu-item__price">$45</span></div>
+          <h3 class="menu-cat">Alitas &amp; Boneless</h3>
+          <p class="menu-cat-desc">Guarnicion de zanahoria, j&iacute;cama y aderezo ranch.</p>
+          <div class="menu-item"><span class="menu-item__name">Alitas 6 pzas.</span><span class="menu-item__price">$70</span></div>
+          <div class="menu-item"><span class="menu-item__name">Alitas 12 pzas.</span><span class="menu-item__price">$125</span></div>
+          <div class="menu-item"><span class="menu-item__name">Boneless</span><span class="menu-item__price">$85</span></div>
+          <p class="menu-flavors"><strong>Picosas:</strong> Mango Habanero, Maracuy&aacute; Habanero, Tamarindo Habanero, B&uacute;falo, Zarzamora Chipotle, Frambuesa Morita, Mango Guajillo. <strong>Saladas:</strong> Lemon Pepper. <strong>Agridulces:</strong> BBQ, Teriyaki.</p>
+
+          <h3 class="menu-cat">Papas</h3>
+          <div class="menu-item"><span class="menu-item__name">Papas a la Francesa</span><span class="menu-item__price">$50</span></div>
+          <div class="menu-item"><span class="menu-item__name">Papas Gajo</span><span class="menu-item__price">$65</span></div>
         </div>
         <div>
-          <h3 class="menu-cat">Crepas Saladas</h3>
-          <div class="menu-item"><span class="menu-item__name">Champinon con Queso</span><span class="menu-item__price">$50</span></div>
-          <div class="menu-item"><span class="menu-item__name">Jamon con Queso</span><span class="menu-item__price">$50</span></div>
+          <h3 class="menu-cat">Antojitos</h3>
+          <div class="menu-item"><span class="menu-item__name">Nachos</span><span class="menu-item__price">$50</span></div>
+          <div class="menu-item"><span class="menu-item__name">Nachos Zempoalli</span><span class="menu-item__price">$50</span></div>
+          <div class="menu-item"><span class="menu-item__name">Dedos de Queso</span><span class="menu-item__price">$80</span></div>
+          <div class="menu-item"><span class="menu-item__name">Salchi-Pulpo</span><span class="menu-item__price">$65</span></div>
         </div>
       </div>
     </div>
@@ -288,25 +370,27 @@
       <div class="menu-cols">
         <div>
           <h3 class="menu-cat">Crepas Dulces</h3>
-          <p class="menu-cat-desc">Con helado. Queso dulce, lechera, chocolate, nuez.</p>
-          <div class="menu-item"><span class="menu-item__name">Durazno</span><span class="menu-item__price">$50</span></div>
-          <div class="menu-item"><span class="menu-item__name">Fresa</span><span class="menu-item__price">$50</span></div>
-          <div class="menu-item"><span class="menu-item__name">Cajeta</span><span class="menu-item__price">$50</span></div>
-          <div class="menu-item"><span class="menu-item__name">Nutella-Platano</span><span class="menu-item__price">$50</span></div>
+          <p class="menu-cat-desc">Con helado, queso dulce, lechera, jarabe de chocolate, nuez. Ingrediente extra +$10.</p>
+          <div class="menu-item"><span class="menu-item__name">Durazno</span><span class="menu-item__price">$70</span></div>
+          <div class="menu-item"><span class="menu-item__name">Mermelada de Fresa</span><span class="menu-item__price">$70</span></div>
+          <div class="menu-item"><span class="menu-item__name">Fresa</span><span class="menu-item__price">$70</span></div>
+          <div class="menu-item"><span class="menu-item__name">Cajeta</span><span class="menu-item__price">$70</span></div>
+          <div class="menu-item"><span class="menu-item__name">Nutella</span><span class="menu-item__price">$70</span></div>
+          <div class="menu-item"><span class="menu-item__name">Pl&aacute;tano</span><span class="menu-item__price">$70</span></div>
 
-          <h3 class="menu-cat">Waffles &amp; Hot Cakes</h3>
-          <div class="menu-item"><span class="menu-item__name">Waffles</span><span class="menu-item__price">$50</span></div>
-          <p class="menu-cat-desc">Lechera, chocolate, miel maple, fruta (durazno, fresa o platano), nuez. Acompanado de helado.</p>
-          <div class="menu-item"><span class="menu-item__name">Hot Cakes</span><span class="menu-item__price">$45</span></div>
-          <p class="menu-cat-desc">Lechera, chocolate, miel maple, fruta (durazno, fresa o platano), nuez.</p>
+          <h3 class="menu-cat">Waffles</h3>
+          <p class="menu-cat-desc">Miel maple, lechera, jarabe de chocolate, nuez + helado. Ingrediente extra +$10.</p>
+          <div class="menu-item"><span class="menu-item__name">Waffles</span><span class="menu-item__price">$75</span></div>
         </div>
         <div>
+          <h3 class="menu-cat">Hot Cakes</h3>
+          <p class="menu-cat-desc">Miel maple, lechera, jarabe de chocolate, nuez + helado. Ingrediente extra +$10.</p>
+          <div class="menu-item"><span class="menu-item__name">Hot Cakes</span><span class="menu-item__price">$55</span></div>
+
           <h3 class="menu-cat">Postres</h3>
-          <div class="menu-item"><span class="menu-item__name">Galletas</span><span class="menu-item__price">$13</span></div>
-          <div class="menu-item"><span class="menu-item__name">Tartas</span><span class="menu-item__price">$50</span></div>
-          <div class="menu-item"><span class="menu-item__name">Bisquets a la Mantequilla</span><span class="menu-item__price">$45</span></div>
-          <p class="menu-cat-desc">Acompanados de mermelada de fresa.</p>
-          <div class="menu-item"><span class="menu-item__name">Copa de Helado (Chocolate, Fresa, Galleta o Vainilla)</span><span class="menu-item__price">$45</span></div>
+          <div class="menu-item"><span class="menu-item__name">Tartas</span><span class="menu-item__price">$65</span></div>
+          <div class="menu-item"><span class="menu-item__name">Copa de Helado</span><span class="menu-item__price">$50</span></div>
+          <p class="menu-cat-desc">Chocolate, Fresa, Galleta o Vainilla.</p>
         </div>
       </div>
     </div>
@@ -316,22 +400,29 @@
       <div class="menu-cols">
         <div>
           <h3 class="menu-cat">Malteadas</h3>
-          <div class="menu-item"><span class="menu-item__name">Fresa, Vainilla, Cookies &amp; Cream, Chocolate</span><span class="menu-item__price">$45</span></div>
+          <div class="menu-item"><span class="menu-item__name">Fresa, Vainilla, Cookies &amp; Cream, Chocolate</span><span class="menu-item__price">$55</span></div>
 
           <h3 class="menu-cat">Smoothies</h3>
-          <div class="menu-item"><span class="menu-item__name">Fresa, Mango, Kiwi, Mora Azul, Pina Colada, Tamarindo</span><span class="menu-item__price">$55</span></div>
+          <div class="menu-item"><span class="menu-item__name">Fresa, Mango, Kiwi, Mora Azul, Pi&ntilde;a Colada, Tamarindo</span><span class="menu-item__price">$70</span></div>
 
-          <h3 class="menu-cat">Frappe</h3>
-          <div class="menu-item"><span class="menu-item__name">Chocolate Blanco, Te Verde Matcha, Fresas con Crema, Mazapan, Dark Cookies, Mocha, Algodon de Azucar</span><span class="menu-item__price">$60</span></div>
+          <h3 class="menu-cat">Frapp&eacute;</h3>
+          <div class="menu-item"><span class="menu-item__name">Chocolate Blanco, T&eacute; Verde Matcha, Fresas con Crema, Mazap&aacute;n, Dark Cookies, Mocha, Algod&oacute;n de Az&uacute;car, Taro</span><span class="menu-item__price">$75</span></div>
+
+          <h3 class="menu-cat">Caf&eacute; Helado</h3>
+          <div class="menu-item"><span class="menu-item__name">Caf&eacute; Helado</span><span class="menu-item__price">$50</span></div>
         </div>
         <div>
           <h3 class="menu-cat">Soda Italiana</h3>
-          <div class="menu-item"><span class="menu-item__name">Fresa, Manzana Verde, Cereza, Mora Azul</span><span class="menu-item__price">$55</span></div>
+          <p class="menu-cat-desc">Con perlas explosivas frutos rojos / mora azul.</p>
+          <div class="menu-item"><span class="menu-item__name">Fresa, Manzana Verde, Cereza, Mora Azul</span><span class="menu-item__price">$65</span></div>
+
+          <h3 class="menu-cat">Limonadas</h3>
+          <div class="menu-item"><span class="menu-item__name">Limonada</span><span class="menu-item__price">$40</span></div>
+          <div class="menu-item"><span class="menu-item__name">Naranjada</span><span class="menu-item__price">$40</span></div>
 
           <h3 class="menu-cat">Extras</h3>
-          <div class="menu-item"><span class="menu-item__name">Cafe Helado</span><span class="menu-item__price">$40</span></div>
-          <div class="menu-item"><span class="menu-item__name">Limonada / Naranjada</span><span class="menu-item__price">$35</span></div>
-          <div class="menu-item"><span class="menu-item__name">Perlas Explosivas (Frutos Rojos y Mora)</span><span class="menu-item__price">+$10</span></div>
+          <div class="menu-item"><span class="menu-item__name">Leche deslactosada</span><span class="menu-item__price">+$10</span></div>
+          <div class="menu-item"><span class="menu-item__name">Perlas explosivas</span><span class="menu-item__price">+$10</span></div>
         </div>
       </div>
     </div>
@@ -340,50 +431,51 @@
     <div class="menu-panel" id="calientes">
       <div class="menu-cols">
         <div>
-          <h3 class="menu-cat">Cafe</h3>
-          <div class="menu-item"><span class="menu-item__name">Cafe Americano</span><span class="menu-item__price">$30</span></div>
-          <div class="menu-item"><span class="menu-item__name">Cafe Americano con Leche</span><span class="menu-item__price">$35</span></div>
-          <div class="menu-item"><span class="menu-item__name">Espresso</span><span class="menu-item__price">$30</span></div>
-          <div class="menu-item"><span class="menu-item__name">Espresso Doble</span><span class="menu-item__price">$40</span></div>
-          <div class="menu-item"><span class="menu-item__name">Cortado</span><span class="menu-item__price">$35</span></div>
+          <h3 class="menu-cat">Caf&eacute;</h3>
+          <div class="menu-item"><span class="menu-item__name">Caf&eacute; Americano</span><span class="menu-item__price">$45</span></div>
+          <div class="menu-item"><span class="menu-item__name">Espresso</span><span class="menu-item__price">$40</span></div>
+          <div class="menu-item"><span class="menu-item__name">Doppio</span><span class="menu-item__price">$50</span></div>
+          <div class="menu-item"><span class="menu-item__name">Flat White</span><span class="menu-item__price">$50</span></div>
+          <div class="menu-item"><span class="menu-item__name">Cortado</span><span class="menu-item__price">$45</span></div>
           <div class="menu-item"><span class="menu-item__name">Vaso de Leche</span><span class="menu-item__price">$25</span></div>
-          <div class="menu-item"><span class="menu-item__name">Capuchino CH 8oz. / G 16oz.</span><span class="menu-item__price">$35 / $45</span></div>
-          <p class="menu-cat-desc">Agrega sabor +$10 (Amaretto, Rompope, Cajeta, Crema Irlandesa)</p>
-          <div class="menu-item"><span class="menu-item__name">Latte CH 8oz. / G 16oz.</span><span class="menu-item__price">$35 / $40</span></div>
-          <div class="menu-item"><span class="menu-item__name">Choco-Menta Latte CH 8oz. / G 16oz.</span><span class="menu-item__price">$40 / $55</span></div>
-          <div class="menu-item"><span class="menu-item__name">Matcha Latte CH 8oz. / G 16oz.</span><span class="menu-item__price">$40 / $55</span></div>
-          <div class="menu-item"><span class="menu-item__name">Moka Blanco/Oscuro CH 8oz. / G 16oz.</span><span class="menu-item__price">$45 / $60</span></div>
-          <div class="menu-item"><span class="menu-item__name">Chai Original CH 8oz. / G 16oz.</span><span class="menu-item__price">$45 / $60</span></div>
         </div>
         <div>
-          <h3 class="menu-cat">Chocolate</h3>
-          <div class="menu-item"><span class="menu-item__name">Chocolate Blanco CH 8oz. / G 16oz.</span><span class="menu-item__price">$35 / $50</span></div>
-          <div class="menu-item"><span class="menu-item__name">Chocolate Oscuro CH 8oz. / G 16oz.</span><span class="menu-item__price">$40 / $55</span></div>
-
-          <h3 class="menu-cat">Tisana Herbal</h3>
-          <p class="menu-cat-desc">Detox, Frescura Verde, Menta-Limon.</p>
-          <div class="menu-item"><span class="menu-item__name">Tisana Herbal</span><span class="menu-item__price">$35</span></div>
-
-          <h3 class="menu-cat">Tisana Frutal</h3>
-          <p class="menu-cat-desc">Manzanilla, Doble Menta, Manzana-Arandano-Anis, Jengibre-Limon, Jamaica con Limon.</p>
-          <div class="menu-item"><span class="menu-item__name">Tisana Frutal</span><span class="menu-item__price">$45</span></div>
-
-          <h3 class="menu-cat">Tes</h3>
-          <p class="menu-cat-desc">Limon, Manzanilla, Doble Menta, Manzana-Arandano-Anis, Jengibre-Limon, Jamaica con Limon.</p>
-          <div class="menu-item"><span class="menu-item__name">Te</span><span class="menu-item__price">$20</span></div>
+          <h3 class="menu-cat">Tisanas &amp; T&eacute;s</h3>
+          <div class="menu-item"><span class="menu-item__name">Tisana Herbal</span><span class="menu-item__price">$45</span></div>
+          <p class="menu-cat-desc">D&eacute;tox, Frescura Verde, Menta-Lim&oacute;n.</p>
+          <div class="menu-item"><span class="menu-item__name">T&eacute;</span><span class="menu-item__price">$30</span></div>
+          <p class="menu-cat-desc">Lim&oacute;n, Manzanilla, Doble Menta, Manzana-Ar&aacute;ndano-An&iacute;s, Jengibre-Lim&oacute;n, Jamaica con Lim&oacute;n.</p>
         </div>
       </div>
     </div>
 
-    <!-- COCTELERIA -->
-    <div class="menu-panel" id="cocteleria">
-      <div class="menu-cols menu-cols--single">
+    <!-- PECULIARIDAD -->
+    <div class="menu-panel" id="peculiaridad">
+      <div class="menu-cols">
         <div>
-          <h3 class="menu-cat">Cocteleria</h3>
-          <div class="menu-item"><span class="menu-item__name">Mojito Natural</span><span class="menu-item__price">$60</span></div>
-          <div class="menu-item"><span class="menu-item__name">Mojito Frutos Rojos</span><span class="menu-item__price">$75</span></div>
-          <div class="menu-item"><span class="menu-item__name">Carajillo</span><span class="menu-item__price">$65</span></div>
-          <div class="menu-item"><span class="menu-item__name">Cerveza Artesanal (Jaguar, Hidalgo, Catrina)</span><span class="menu-item__price">$65</span></div>
+          <h3 class="menu-cat">Lattes &amp; Especialidades</h3>
+          <p class="menu-cat-desc">Tama&ntilde;os: Ch. 8oz. / G. 16oz. &nbsp;&mdash;&nbsp; +sabor $10 (amaretto, rompope, cajeta, crema irlandesa)</p>
+          <div class="menu-item"><span class="menu-item__name">Capuchino</span><span class="menu-item__price">Ch. $50 / G. $70</span></div>
+          <div class="menu-item"><span class="menu-item__name">Latte</span><span class="menu-item__price">Ch. $50 / G. $70</span></div>
+          <div class="menu-item"><span class="menu-item__name">Chocolate Blanco</span><span class="menu-item__price">Ch. $55 / G. $75</span></div>
+          <div class="menu-item"><span class="menu-item__name">Chocolate Oscuro</span><span class="menu-item__price">Ch. $55 / G. $75</span></div>
+          <div class="menu-item"><span class="menu-item__name">Choco-Menta Latte</span><span class="menu-item__price">Ch. $55 / G. $75</span></div>
+          <div class="menu-item"><span class="menu-item__name">Matcha Latte</span><span class="menu-item__price">Ch. $55 / G. $75</span></div>
+          <div class="menu-item"><span class="menu-item__name">Chai Original</span><span class="menu-item__price">Ch. $55 / G. $75</span></div>
+          <div class="menu-item"><span class="menu-item__name">Taro Latte</span><span class="menu-item__price">Ch. $55 / G. $75</span></div>
+          <div class="menu-item"><span class="menu-item__name">Moka Blanco / Oscuro</span><span class="menu-item__price">Ch. $60 / G. $80</span></div>
+          <div class="menu-item"><span class="menu-item__name">Affogato</span><span class="menu-item__price">$70</span></div>
+          <p class="menu-cat-desc">Helado de vainilla cubierto con espresso.</p>
+        </div>
+        <div>
+          <h3 class="menu-cat">Cocteiler&iacute;a</h3>
+          <div class="menu-item"><span class="menu-item__name">Carajillo</span><span class="menu-item__price">$80</span></div>
+          <p class="menu-cat-desc">Caf&eacute; espresso con licor y hielo.</p>
+          <div class="menu-item"><span class="menu-item__name">Mojito Natural</span><span class="menu-item__price">$70</span></div>
+          <div class="menu-item"><span class="menu-item__name">Mojito Frutos Rojos</span><span class="menu-item__price">$85</span></div>
+          <div class="menu-item"><span class="menu-item__name">Cerveza Artesanal (Jaguar, Hidalgo, Catrina)</span><span class="menu-item__price">$80</span></div>
+          <div class="menu-item"><span class="menu-item__name">Cerveza Minerva</span><span class="menu-item__price">$70</span></div>
+          <div class="menu-item"><span class="menu-item__name">Vino</span><span class="menu-item__price">Consultar</span></div>
         </div>
       </div>
     </div>

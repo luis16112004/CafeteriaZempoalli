@@ -18,6 +18,16 @@ navLinks?.querySelectorAll('a').forEach((link) => {
   });
 });
 
+document.querySelectorAll('.svc-tab').forEach((tab) => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.svc;
+    document.querySelectorAll('.svc-tab').forEach((t) => t.classList.remove('active'));
+    document.querySelectorAll('.svc-panel').forEach((p) => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target)?.classList.add('active');
+  });
+});
+
 document.querySelectorAll('.menu-tab').forEach((tab) => {
   tab.addEventListener('click', () => {
     const target = tab.dataset.tab;
